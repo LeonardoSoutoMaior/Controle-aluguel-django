@@ -1,6 +1,7 @@
 from django.shortcuts import render, redirect
 from myapp.models import Immobile, ImmobileImage
 from myapp.forms import ClientForm, ImmobileForm, RegisterLocationForm
+from django.db.models import Q
 
 
 def list_location(request):
@@ -54,3 +55,31 @@ def form_location(request, id):
             return redirect('list-location') ##retorna para lista
     context = {'form':form, 'location': get_locate}
     return render(request, 'form-location.html', context)
+
+
+def reports(request): # Relatorio
+    immobile = Immobile.objects.all()
+    get_client = request.GET.get('client')
+    get_dt_start = request.GET.get('dt_start')
+    get_dt_end = request.GET.get('dt_end')
+    type_item = request.GET.get('type_item')
+    get_locate = request.GET.get('is_locate')
+    
+    if get_client: ## filtra por nome e email do client
+        immobile = Immobile.objects.filter(
+            Q(reg_location__client__name__icontains=get_client) |
+            Q(reg_location__client__email__icontains=get_client)
+        )
+    
+    if get_dt_start and get_dt_end: ## Por data
+        immobile = Immobile.objects.filter(
+            reg_location__create_at__range=[get_dt_start, get_dt_end]
+        )
+    
+    if type_item: ## Tipo de Imóvel
+        immobile = Immobile.objects.filter(type_item=type_item)
+        
+    if get_locate:
+        immobile = Immobile.objects.filter(is_locate=get_locate)
+    return render(request, 'reports.html', {'immobiles':immobile})
+
